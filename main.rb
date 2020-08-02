@@ -4,55 +4,60 @@ class Brave
 
   SPECIAL_ATTACK_CONSTANT = 1.5
 
-  def initialize(params)
+  def initialize(**params)
     @name = params[:name]
     @hp = params[:hp]
     @offense = params[:offense]
     @defense = params[:defense]
-  end 
+  end
 
   def attack(monster)
     puts "#{@name}の攻撃"
+
     attack_type = decision_attack_type
     damage = calculate_damage(target: monster, attack_type: attack_type)
     cause_damage(target: monster, damage: damage)
-    puts "#{monster.name}の残りのHPは#{monster.hp}だ"
+
+    puts "#{monster.name}の残りHPは#{monster.hp}だ"
   end
 
-  def decision_attack_type
-    attack_num = rand(4)
+  # ここから下のメソッドをprivateメソッドにする
+  private
 
-    if attack_num == 0
-      puts "必殺攻撃"
-      "special_attack"
-    else
-      puts "通常攻撃"
-      "normal_attack"
+    def decision_attack_type
+      attack_num = rand(4)
+
+      if attack_num == 0
+        puts "必殺攻撃"
+        "special_attack"
+      else
+        puts "通常攻撃"
+        "normal_attack"
+      end
     end
-  end 
 
-  def calculate_damage(**params)
-    target = params[:target]
-    attack_type = params[:attack_type]
+    def calculate_damage(**params)
+      target = params[:target]
+      attack_type = params[:attack_type]
 
-    if attack_type == "special_attack"
-      calculate_special_attack - monster.defense
-    else
-      @offense - monster.defense
+      if attack_type == "special_attack"
+        calculate_special_attack - target.defense
+      else
+        @offense - target.defense
+      end
     end
-  end
 
-  def cause_damage(**params)
-    damage = params[:damage]
-    target = params[:target]
-    
-    monster.hp -= damage
-    puts "#{monster.name}は#{damage}のダメージを受けた"
-  end
+    def cause_damage(**params)
+      damage = params[:damage]
+      target = params[:target]
 
-  def calculate_special_attack
-    @offense * SPECIAL_ATTACK_CONSTANT
-  end 
+      target.hp -= damage
+      puts "#{target.name}は#{damage}のダメージを受けた"
+    end
+
+    def calculate_special_attack
+      @offense * SPECIAL_ATTACK_CONSTANT
+    end
 
 end
 
@@ -68,30 +73,46 @@ class Monster
     @hp = params[:hp]
     @offense = params[:offense]
     @defense = params[:defense]
-    #判定するフラグ
+
     @transform_flag = false
-    #変身する際の値(トリガー)を計算
     @trigger_of_transform = params[:hp] * CALC_HALF_HP
-  end 
+  end
 
   def attack(brave)
     if @hp <= @trigger_of_transform && @transform_flag == false
       @transform_flag = true
       transform
-    end 
+    end
+
     puts "#{@name}の攻撃"
 
-    damage = @offense - brave.defense
-    brave.hp -= damage
+    damage = calculate_damage(brave)
 
-    puts "#{brave.name}は#{damage}の攻撃を受けた"
-    puts "残りのHPは#{brave.hp}だ"
-  end 
+    # ダメージ反映処理の呼び出し
+    cause_damage(target: brave, damage: damage)
+
+    puts "#{brave.name}の残りHPは#{brave.hp}だ"
+  end
 
   private
 
+    def calculate_damage(target)
+      @offense - target.defense
+    end
+
+    # ダメージ反映処理
+    def cause_damage(**params)
+      # 引数で受け取った値を変数に格納
+      damage = params[:damage]
+      target = params[:target]
+
+      target.hp -= damage
+      puts "#{target.name}は#{damage}のダメージを受けた"
+    end
+
     def transform
       transform_name = "ドラゴン"
+
       puts <<~EOS
       #{@name}は怒っている
       #{@name}は#{transform_name}に変身した
@@ -99,8 +120,9 @@ class Monster
 
       @offense *= POWER_UP_RATE
       @name = transform_name
-    end 
-end 
+    end
+
+end
 
 brave = Brave.new(name:"カリー", hp:500, offense:150, defense:100)
 monster = Monster.new(name:"スライム", hp:250, offense:200, defense:100)
